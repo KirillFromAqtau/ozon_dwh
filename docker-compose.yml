@@ -1,0 +1,58 @@
+# Логины и пароли НЕ хранятся в этом файле.
+# Docker Compose автоматически читает .env из папки проекта
+# и подставляет значения вместо ${...}. Образец — .env.example.
+services:
+  postgres:
+    image: postgres:16
+    container_name: ozon_dwh_pg
+    environment:
+      POSTGRES_DB: ${PG_DB}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # скрипты из ./sql выполнятся автоматически при ПЕРВОМ старте
+      - ./sql:/docker-entrypoint-initdb.d
+    healthcheck:                          # Airflow стартует только когда база готова
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB}"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------
+  # Airflow 3 в режиме standalone: api-server + scheduler +
+  # dag-processor + triggerer в одном контейнере. Метаданные Airflow
+  # хранятся в отдельной базе "airflow" на том же PostgreSQL.
+  # ---------------------------------------------------------------
+  airflow:
+    image: apache/airflow:3.2.2
+    container_name: ozon_dwh_airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${PG_USER}:${PG_PASSWORD}@postgres:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Aqtau
+      # локально без логина: все пользователи — админы (НЕ для продакшена)
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "True"
+      # наши скрипты внутри контейнера ходят в базу по имени сервиса, а не localhost
+      PG_HOST: postgres
+      PG_PORT: "5432"
+      # библиотеки для наших скриптов (для локальной разработки так можно)
+      _PIP_ADDITIONAL_REQUIREMENTS: "python-dotenv psycopg2-binary"
+    volumes:
+      - ./dags:/opt/airflow/dags          # DAG-файлы
+      - ./:/opt/ozon_dwh                  # весь проект: src/, sql/, .env
+      - airflow_logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"                       # веб-интерфейс: http://localhost:8080
+    command: standalone
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  airflow_logs:

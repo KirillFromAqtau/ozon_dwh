@@ -1,0 +1,14 @@
+# секреты и реальные коммерческие данные
+.env
+sql/seed/my_setup.sql
+
+# окружение и кэш Python
+.venv/
+__pycache__/
+*.pyc
+
+# выгрузки из API и твои CSV с бизнес-данными
+data/
+
+# macOS
+.DS_Store
