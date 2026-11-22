@@ -1,0 +1,57 @@
+[
+  {
+    "posting_number": "11111111-0001-1",
+    "order_number": "11111111-0001",
+    "status": "delivered",
+    "substatus": "posting_received",
+    "in_process_at": "2026-11-01T10:00:00Z",
+    "shipment_date": "2026-11-02T07:00:00Z",
+    "delivering_date": "2026-11-02T15:30:00Z",
+    "cancellation": {"cancel_reason": "", "cancellation_initiator": ""},
+    "analytics_data": {"region": "", "delivery_type": "PVZ"},
+    "financial_data": {
+      "cluster_to": "Москва, МО и Дальние регионы",
+      "products": [
+        {"product_id": 900001, "customer_price": {"amount": "320.50", "currency": "RUB"}}
+      ]
+    },
+    "products": [
+      {"offer_id": "TEST_HOLDER", "sku": 900001, "name": "Тестовый держатель",
+       "quantity": 1, "price": {"amount": "1500.00", "currency": "KZT"}}
+    ]
+  },
+  {
+    "posting_number": "22222222-0001-1",
+    "order_number": "22222222-0001",
+    "status": "cancelled",
+    "substatus": "posting_canceled",
+    "in_process_at": "2026-11-03T12:00:00Z",
+    "shipment_date": "2026-11-04T07:00:00Z",
+    "delivering_date": "",
+    "cancellation": {"cancel_reason": "Покупатель отменил", "cancellation_initiator": "Клиент"},
+    "analytics_data": {"region": "", "delivery_type": "PVZ"},
+    "financial_data": {"cluster_to": "Омск", "products": []},
+    "products": [
+      {"offer_id": "TEST_CLIP", "sku": 900002, "name": "Тестовый зажим",
+       "quantity": 1, "price": "800.0000", "currency_code": "KZT"}
+    ]
+  },
+  {
+    "posting_number": "33333333-0001-1",
+    "order_number": "33333333-0001",
+    "status": "awaiting_deliver",
+    "substatus": "posting_awaiting_passport_data",
+    "in_process_at": "2026-11-05T09:00:00Z",
+    "shipment_date": "2026-11-06T07:00:00Z",
+    "delivering_date": "",
+    "cancellation": null,
+    "analytics_data": {"region": "", "delivery_type": "Courier"},
+    "financial_data": {"cluster_to": "Уфа", "products": []},
+    "products": [
+      {"offer_id": "TEST_CLIP", "sku": 900002, "name": "Тестовый зажим",
+       "quantity": 2, "price": {"amount": "800.00", "currency": "KZT"}},
+      {"offer_id": "TEST_HOLDER", "sku": 900001, "name": "Тестовый держатель",
+       "quantity": 1, "price": {"amount": "1500.00", "currency": "KZT"}}
+    ]
+  }
+]

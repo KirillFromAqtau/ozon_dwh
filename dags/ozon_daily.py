@@ -1,7 +1,10 @@
 """
 Ежедневная загрузка данных Ozon в ozon_dwh.
 
-    load_fbs_postings ─► load_accruals ─► refresh_products ─► dq_checks
+    migrate ─► load_fbs_postings ─► load_accruals ─► refresh_products ─► dq_checks
+
+migrate применяет схему (идемпотентно): после git pull с новой миграцией
+база обновится сама при следующем запуске DAG.
 
 Почему такие периоды:
   * отправления за 30 дней — статусы меняются (delivering → delivered ~2 недели),
@@ -34,6 +37,11 @@ PROJECT = "/opt/ozon_dwh"
     tags=["ozon", "elt"],
 )
 def ozon_daily():
+    migrate = BashOperator(
+        task_id="migrate",
+        bash_command=f"cd {PROJECT} && python src/migrate.py",
+        retries=0,
+    )
     load_postings = BashOperator(
         task_id="load_fbs_postings",
         bash_command=f"cd {PROJECT} && python src/load_fbs_postings.py --days 30",
@@ -52,7 +60,7 @@ def ozon_daily():
         retries=0,                                 # проверку повторять бессмысленно
     )
 
-    load_postings >> load_accruals >> refresh_products >> dq_checks
+    migrate >> load_postings >> load_accruals >> refresh_products >> dq_checks
 
 
 ozon_daily()

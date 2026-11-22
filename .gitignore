@@ -12,3 +12,7 @@ data/
 
 # macOS
 .DS_Store
+
+# кэш инструментов
+.pytest_cache/
+.ruff_cache/

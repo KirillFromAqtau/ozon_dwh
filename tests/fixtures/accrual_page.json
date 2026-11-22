@@ -1,0 +1,44 @@
+{
+  "accruals": [
+    {
+      "accrual_id": 1001, "date": "2026-11-10", "accrued_category": "POSTING",
+      "unit_number": "11111111-0001-1",
+      "posting": {
+        "products": [
+          {
+            "sku": 900001, "quantity": 1,
+            "commission": {
+              "sale_amount":     {"amount": "1500", "currency": "KZT"},
+              "sale_commission": {"amount": "-180", "currency": "KZT"},
+              "bonus":           {"amount": "80",   "currency": "KZT"}
+            },
+            "delivery": {"services": [
+              {"type_id": 32, "accrued": {"amount": "-246", "currency": "KZT"}}
+            ]}
+          }
+        ]
+      },
+      "item_fees": null, "non_item_fee": null, "container_fees": null,
+      "total_amount": {"amount": "1074", "currency": "KZT"}
+    },
+    {
+      "accrual_id": 1002, "date": "2026-11-10", "accrued_category": "NON_ITEM",
+      "unit_number": "11111111-0001-1",
+      "posting": null, "item_fees": null, "container_fees": null,
+      "non_item_fee": {"type_id": 14, "accrued": {"amount": "-330", "currency": "KZT"}},
+      "total_amount": {"amount": "-330", "currency": "KZT"}
+    },
+    {
+      "accrual_id": 1003, "date": "2026-11-11", "accrued_category": "ITEM",
+      "unit_number": "38088655371",
+      "posting": null, "non_item_fee": null, "container_fees": null,
+      "item_fees": {"fees": [
+        {"sku": 900002, "quantity": 1, "fees": [
+          {"type_id": 15, "accrued": {"amount": "-160", "currency": "KZT"}}
+        ]}
+      ]},
+      "total_amount": {"amount": "-160", "currency": "KZT"}
+    }
+  ],
+  "last_id": ""
+}

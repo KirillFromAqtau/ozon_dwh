@@ -13,8 +13,9 @@ services:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      # скрипты из ./sql выполнятся автоматически при ПЕРВОМ старте
-      - ./sql:/docker-entrypoint-initdb.d
+      # при ПЕРВОМ старте пустого volume создаётся база для Airflow;
+      # схему ozon_dwh применяет src/migrate.py (задача migrate в DAG)
+      - ./sql/init:/docker-entrypoint-initdb.d
     healthcheck:                          # Airflow стартует только когда база готова
       test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB}"]
       interval: 5s

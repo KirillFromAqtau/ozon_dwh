@@ -1,5 +1,7 @@
 # Ozon DWH — аналитическое хранилище для магазина на Ozon
 
+[![CI](https://github.com/KirillFromAqtau/ozon_dwh/actions/workflows/ci.yml/badge.svg)](https://github.com/KirillFromAqtau/ozon_dwh/actions/workflows/ci.yml)
+
 Хранилище данных для реального магазина 3D-печатных товаров, который продаёт через Ozon по схеме FBS (кросс-бордер, Казахстан → Россия).
 Проект ежедневно забирает заказы и финансовые начисления из Ozon Seller API, приводит их к аналитической модели и считает **чистую юнит-экономику каждого товара**: сколько реально приходит на счёт после комиссии, логистики, штрафов и возвратов, за вычетом себестоимости печати.
 
@@ -12,6 +14,7 @@
 | Хранилище | PostgreSQL 16 (слои `raw` → `core` → `mart`) |
 | Оркестрация | Apache Airflow 3.2 |
 | Инфраструктура | Docker Compose |
+| Качество | pytest (тесты на реальном PostgreSQL), ruff, GitHub Actions |
 
 ## Архитектура
 
@@ -33,7 +36,7 @@ mart.*  — витрины: юнит-экономика, себестоимос�
 **Airflow DAG `ozon_daily`** (ежедневно 07:00, Asia/Aqtau):
 
 ```
-load_fbs_postings ─► load_accruals ─► refresh_products ─► dq_checks
+migrate ─► load_fbs_postings ─► load_accruals ─► refresh_products ─► dq_checks
 ```
 
 ## Ключевые решения
@@ -60,34 +63,57 @@ load_fbs_postings ─► load_accruals ─► refresh_products ─► dq_checks
 
 ```
 dags/ozon_daily.py                 Airflow DAG
+src/db.py                          общее подключение к БД
+src/migrate.py                     применение схемы (идемпотентно)
 src/load_fbs_postings.py           API → raw → core (отправления)
 src/load_accruals.py               API → raw → core (начисления)
 src/product_costs.py               выгрузка/загрузка себестоимости через CSV
 src/run_sql.py                     запуск SQL-файлов
 src/dq_checks.py                   проверки качества
-sql/01_schema.sql                  схема raw/core/mart
-sql/02_marts.sql                   витрины
+sql/init/                          создание базы Airflow при первом старте
+sql/schema/01_schema.sql           таблицы raw/core/mart
+sql/schema/02_marts.sql            витрины
 sql/migrations/                    изменения схемы
 sql/transform/                     raw → core
 sql/seed/my_setup.example.sql      образец справочников производства
                                    (реальный my_setup.sql — в .gitignore)
+tests/                             pytest + обезличенные фикстуры ответов API
+.github/workflows/ci.yml           CI: ruff, тесты, импорт DAG
 docker-compose.yml                 PostgreSQL + Airflow
 ```
 
 ## Запуск
 
 ```bash
-cp .env.example .env          # заполнить ключи Ozon и логин/пароль БД
+cp .env.example .env                                     # ключи Ozon, логин/пароль БД
 cp sql/seed/my_setup.example.sql sql/seed/my_setup.sql   # свои цены закупок
-docker compose up -d postgres
-docker exec ozon_dwh_pg createdb -U <PG_USER> airflow
-for f in sql/migrations/*.sql; do docker exec -i ozon_dwh_pg psql -U <PG_USER> -d ozon_dwh < "$f"; done
-docker compose up -d          # Airflow: http://localhost:8080
+docker compose up -d                                     # PostgreSQL + Airflow: http://localhost:8080
 
-python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-python src/load_fbs_postings.py --days 180     # первичная загрузка истории
+python -m venv .venv && source .venv/bin/activate && pip install -r requirements-dev.txt
+python src/migrate.py                                    # схема (DAG тоже делает это первым шагом)
+python src/load_fbs_postings.py --days 180               # первичная загрузка истории
 python src/load_accruals.py --days 180
 ```
+
+## Тесты и CI
+
+Тесты гоняются на **настоящем PostgreSQL**, а не на моках: схема создаётся с нуля
+тем же `migrate.py`, что и в проде, в raw кладутся обезличенные образцы ответов API,
+затем запускаются те же SQL-трансформации, что и в DAG.
+
+Что проверяется:
+- разбор отправлений: цена объектом (v4) и строкой (v3), пустые даты, несколько товаров;
+- разбор начислений: **сумма «атомов» равна `total_amount` Ozon**, группы, неизвестный блок попадает в `Unparsed`;
+- юнит-экономика на ручном расчёте;
+- идемпотентность: повторный запуск миграций и трансформаций не создаёт дублей;
+- DQ-проверки и импорт DAG в Airflow 3.
+
+```bash
+docker exec ozon_dwh_pg createdb -U <PG_USER> ozon_test
+PG_DB=ozon_test pytest -v       # база обязана оканчиваться на _test — защита от запуска на проде
+```
+
+GitHub Actions при каждом push: `ruff` → чистая установка схемы → `pytest` → проверка импорта DAG.
 
 ## Что дал проект бизнесу
 

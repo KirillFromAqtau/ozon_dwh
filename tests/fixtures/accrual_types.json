@@ -1,0 +1,10 @@
+{
+  "accrual_types": [
+    {"id": 14, "name": "DefectRate", "description": "Обработка операционных ошибок продавца"},
+    {"id": 15, "name": "Disposal", "description": "Утилизация"},
+    {"id": 32, "name": "Logistic", "description": "Логистика"},
+    {"id": 59, "name": "ReturnFlowLogistic", "description": "Обратная логистика"},
+    {"id": 69, "name": "SaleCommission", "description": "Комиссия за продажу"},
+    {"id": 70, "name": "Acquiring", "description": "Эквайринг"}
+  ]
+}

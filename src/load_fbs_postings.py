@@ -17,18 +17,15 @@ import json
 import os
 import time
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
-import psycopg2
 import requests
-from dotenv import load_dotenv
 from psycopg2.extras import Json, execute_values
+
+from db import ROOT, connect  # общее подключение к БД (+ чтение .env)
 
 # --------------------------------------------------------------------------
 # Настройки
 # --------------------------------------------------------------------------
-ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(ROOT / ".env")                    # читает OZON_CLIENT_ID, OZON_API_KEY, PG_*
 
 API_URL = "https://api-seller.ozon.ru/v4/posting/fbs/list"
 PAGE_LIMIT = 100          # v4 принимает максимум 100 за запрос
@@ -41,14 +38,6 @@ HEADERS = {
 }
 
 
-def pg_connect():
-    return psycopg2.connect(
-        host=os.getenv("PG_HOST", "localhost"),
-        port=os.getenv("PG_PORT", "5432"),
-        dbname=os.getenv("PG_DB", "ozon_dwh"),
-        user=os.environ["PG_USER"],
-        password=os.environ["PG_PASSWORD"],
-    )
 
 
 # --------------------------------------------------------------------------
@@ -155,7 +144,7 @@ def main():
         print(f"Сохранено в {out}")
         return
 
-    conn = pg_connect()
+    conn = connect()
     try:
         n = load_raw(conn, postings)
         transform(conn)

@@ -15,15 +15,11 @@ import json
 import os
 import time
 from datetime import date, timedelta
-from pathlib import Path
 
-import psycopg2
 import requests
-from dotenv import load_dotenv
 from psycopg2.extras import Json
 
-ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(ROOT / ".env")
+from db import ROOT, connect  # общее подключение к БД (+ чтение .env)
 
 BASE = "https://api-seller.ozon.ru"
 HEADERS = {
@@ -33,14 +29,6 @@ HEADERS = {
 }
 
 
-def pg_connect():
-    return psycopg2.connect(
-        host=os.getenv("PG_HOST", "localhost"),
-        port=os.getenv("PG_PORT", "5432"),
-        dbname=os.getenv("PG_DB", "ozon_dwh"),
-        user=os.environ["PG_USER"],
-        password=os.environ["PG_PASSWORD"],
-    )
 
 
 def post(path: str, body: dict, retries: int = 4) -> dict:
@@ -105,7 +93,7 @@ def main():
 
     types = post("/v1/finance/accrual/types", {})
 
-    conn = pg_connect()
+    conn = connect()
     try:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO raw.ozon_accrual_types (payload) VALUES (%s)", (Json(types),))
