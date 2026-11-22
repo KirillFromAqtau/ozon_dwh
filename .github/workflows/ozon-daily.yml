@@ -1,0 +1,51 @@
+# Ежедневная загрузка Ozon → Neon (production).
+# Запуск: по расписанию или вручную (вкладка Actions → Run workflow,
+# либо из терминала: gh workflow run ozon-daily.yml).
+#
+# Секреты хранятся в Settings → Secrets and variables → Actions
+# и автоматически маскируются в логах (***).
+# ВНИМАНИЕ: логи публичного репозитория видны всем — скрипты
+# печатают только количества и даты, без сумм и названий товаров.
+name: Ozon daily load
+
+on:
+  schedule:
+    - cron: "0 2 * * *"        # 02:00 UTC = 07:00 по Актау (UTC+5)
+  workflow_dispatch:           # кнопка ручного запуска
+
+concurrency:                   # никогда не запускать два прогона одновременно
+  group: ozon-daily
+  cancel-in-progress: false
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OZON_CLIENT_ID: ${{ secrets.OZON_CLIENT_ID }}
+      OZON_API_KEY: ${{ secrets.OZON_API_KEY }}
+      PG_HOST: ${{ secrets.PG_HOST }}
+      PG_PORT: "5432"
+      PG_DB: ${{ secrets.PG_DB }}
+      PG_USER: ${{ secrets.PG_USER }}
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+      PG_SSLMODE: require
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      # та же цепочка, что и в Airflow DAG ozon_daily
+      - name: migrate
+        run: python src/migrate.py
+      - name: load_fbs_postings
+        run: python src/load_fbs_postings.py --days 30
+      - name: load_accruals
+        run: python src/load_accruals.py --days 14
+      - name: refresh_products
+        run: python src/run_sql.py sql/transform/products_from_postings.sql
+      - name: dq_checks
+        run: python src/dq_checks.py

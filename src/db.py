@@ -21,4 +21,7 @@ def connect():
         dbname=os.getenv("PG_DB", "ozon_dwh"),
         user=os.environ["PG_USER"],
         password=os.environ["PG_PASSWORD"],
+        # облачные базы (Neon) требуют шифрование: PG_SSLMODE=require;
+        # локальный Docker работает и с prefer (по умолчанию)
+        sslmode=os.getenv("PG_SSLMODE", "prefer"),
     )
