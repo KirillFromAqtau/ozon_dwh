@@ -7,7 +7,7 @@ sql/seed/my_setup.sql
 __pycache__/
 *.pyc
 
-# выгрузки из API и твои CSV с бизнес-данными
+# выгрузки из API и CSV с бизнес-данными
 data/
 
 # macOS
